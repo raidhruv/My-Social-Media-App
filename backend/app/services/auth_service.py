@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
 from app.models.user import User
-from app.schemas.auth import UserRegister
+from app.schemas.user import UserCreate
 from app.utils.security import hash_password
 
 from app.repositories.user_repository import UserRepository
@@ -12,7 +12,7 @@ class AuthService:
     def __init__(self, db: Session):
         self.user_repository = UserRepository(db)
         
-    def register(self, user_data: UserRegister) -> User:
+    def register(self, user_data: UserCreate) -> User:
         if self.user_repository.get_by_email(user_data.email):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

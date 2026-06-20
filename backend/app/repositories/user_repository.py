@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.user import User
-from app.schemas.auth import UserRegister
+from app.schemas.user import UserCreate
 
 
 class UserRepository:
