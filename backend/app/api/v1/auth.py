@@ -4,6 +4,7 @@ from app.schemas.user import UserResponse
 from app.db.dependencies import get_db
 from app.schemas.user import UserCreate
 from app.services.auth_service import AuthService
+from app.schemas.auth import LoginRequest, Token
 
 router = APIRouter(
     prefix="/auth",
@@ -22,3 +23,14 @@ def register(
 ):
     auth_service = AuthService(db)
     return auth_service.register(user)
+
+@router.post(
+    "/login",
+    response_model=Token,
+)
+def login(
+    credentials: LoginRequest,
+    db: Session = Depends(get_db),
+):
+    auth_service = AuthService(db)
+    return auth_service.login(credentials)
