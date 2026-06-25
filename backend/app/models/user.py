@@ -1,6 +1,6 @@
 from sqlalchemy import Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column
-
+from sqlalchemy.orm import relationship
 from app.models.base_model import BaseModel
 
 
@@ -36,4 +36,9 @@ class User(BaseModel):
         Boolean,
         default=False,
         nullable=False,
+    )
+    refresh_sessions = relationship(
+        "RefreshSession",
+        back_populates="user",
+        cascade="all, delete-orphan",
     )

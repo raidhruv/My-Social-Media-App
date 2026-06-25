@@ -1,15 +1,24 @@
-from fastapi import APIRouter, Depends
+from fastapi import (
+    APIRouter,
+    Depends,
+    Header,
+    HTTPException,
+    status,
+)
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from app.schemas.user import UserResponse
-from app.db.dependencies import get_db
 from app.schemas.user import UserCreate
-from app.services.auth_service import AuthService
+from app.db.dependencies import get_db
+from app.core.dependencies import get_current_user
+from app.models.user import User
 from app.schemas.auth import (
     LoginRequest,
     RefreshTokenRequest,
     Token,
-    AccessTokenResponse,
+    MessageResponse,
+    SessionResponse,
 )
+from app.services.auth_service import AuthService
 
 router = APIRouter(
     prefix="/auth",
@@ -19,34 +28,106 @@ router = APIRouter(
 
 @router.post(
     "/register",
-    response_model=UserResponse,
-    status_code=201,
+    status_code=status.HTTP_201_CREATED,
 )
 def register(
-    user: UserCreate,
+    user_data: UserCreate,
     db: Session = Depends(get_db),
 ):
-    auth_service = AuthService(db)
-    return auth_service.register(user)
+    service = AuthService(db)
+    return service.register(user_data)
+
 
 @router.post(
     "/login",
     response_model=Token,
 )
 def login(
-    credentials: LoginRequest,
+    login_data: LoginRequest,
     db: Session = Depends(get_db),
+    user_agent: str | None = Header(default=None),
 ):
-    auth_service = AuthService(db)
-    return auth_service.login(credentials)
+    service = AuthService(db)
+
+    return service.login(
+        login_data=login_data,
+        user_agent=user_agent,
+    )
+
+
+@router.post(
+    "/token",
+    response_model=Token,
+)
+def oauth2_login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+    user_agent: str | None = Header(default=None),
+):
+    service = AuthService(db)
+
+    return service.login(
+        login_data=LoginRequest(
+            email=form_data.username,
+            password=form_data.password,
+        ),
+        user_agent=user_agent,
+    )
+
 
 @router.post(
     "/refresh",
-    response_model=AccessTokenResponse,
+    response_model=Token,
 )
 def refresh(
-    refresh_token: RefreshTokenRequest,
+    refresh_data: RefreshTokenRequest,
     db: Session = Depends(get_db),
 ):
-    auth_service = AuthService(db)
-    return auth_service.refresh(refresh_token)
+    service = AuthService(db)
+
+    return service.refresh(refresh_data)
+
+
+@router.post(
+    "/logout",
+    response_model=MessageResponse,
+)
+def logout(
+    refresh_data: RefreshTokenRequest,
+    db: Session = Depends(get_db),
+):
+    service = AuthService(db)
+
+    return service.logout(
+        refresh_data.refresh_token,
+    )
+
+
+@router.post(
+    "/logout-all",
+    response_model=MessageResponse,
+)
+def logout_all(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    service = AuthService(db)
+
+    return service.logout_all(
+        current_user,
+    )
+
+
+@router.get(
+    "/sessions",
+    response_model=list[SessionResponse],
+)
+def sessions(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    service = AuthService(db)
+
+    return service.get_sessions(
+        current_user,
+    )
