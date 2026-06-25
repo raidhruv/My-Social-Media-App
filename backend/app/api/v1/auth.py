@@ -4,7 +4,12 @@ from app.schemas.user import UserResponse
 from app.db.dependencies import get_db
 from app.schemas.user import UserCreate
 from app.services.auth_service import AuthService
-from app.schemas.auth import LoginRequest, Token
+from app.schemas.auth import (
+    LoginRequest,
+    RefreshTokenRequest,
+    Token,
+    AccessTokenResponse,
+)
 
 router = APIRouter(
     prefix="/auth",
@@ -34,3 +39,14 @@ def login(
 ):
     auth_service = AuthService(db)
     return auth_service.login(credentials)
+
+@router.post(
+    "/refresh",
+    response_model=AccessTokenResponse,
+)
+def refresh(
+    refresh_token: RefreshTokenRequest,
+    db: Session = Depends(get_db),
+):
+    auth_service = AuthService(db)
+    return auth_service.refresh(refresh_token)

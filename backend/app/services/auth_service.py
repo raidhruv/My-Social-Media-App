@@ -1,16 +1,22 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-
+from uuid import UUID
 from app.models.user import User
 from app.schemas.user import UserCreate
 from app.utils.security import hash_password
 
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth import LoginRequest, Token
+from app.schemas.auth import (
+    LoginRequest,
+    RefreshTokenRequest,
+    Token,
+    AccessTokenResponse,
+)
 from app.utils.security import verify_password
 from app.utils.jwt import (
     create_access_token,
     create_refresh_token,
+    verify_token,
 )
 
 
@@ -39,10 +45,12 @@ class AuthService:
 
         return self.user_repository.create(user)
     
-    def login(self, login_data: LoginRequest) -> Token:
-        user = self.user_repository.get_by_email(
-            login_data.email
-    )
+    def authenticate_user(
+        self,
+        email: str,
+        password: str,
+    ) -> User:
+        user = self.user_repository.get_by_email(email)
 
         if not user:
             raise HTTPException(
@@ -51,13 +59,21 @@ class AuthService:
             )
 
         if not verify_password(
-            login_data.password,
+            password,
             user.hashed_password,
         ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password.",
             )
+
+        return user
+    
+    def login(self, login_data: LoginRequest) -> Token:
+        user = self.authenticate_user(
+            email=login_data.email,
+            password=login_data.password,
+        )
 
         access_token = create_access_token(user.id)
 
@@ -66,4 +82,32 @@ class AuthService:
         return Token(
             access_token=access_token,
             refresh_token=refresh_token,
+        )
+    def refresh(
+        self,
+        refresh_data: RefreshTokenRequest,
+    ) -> AccessTokenResponse:
+
+        payload = verify_token(
+            refresh_data.refresh_token,
+            token_type="refresh",
+        )
+
+        user = self.user_repository.get_by_id(
+            UUID(payload["sub"]),
+        )
+        
+
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token.",
+            )
+
+        access_token = create_access_token(
+            user.id,
+        )
+
+        return AccessTokenResponse(
+            access_token=access_token,
         )
