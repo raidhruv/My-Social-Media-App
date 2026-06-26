@@ -15,10 +15,13 @@ from app.schemas.auth import (
     LoginRequest,
     RefreshTokenRequest,
     Token,
+    VerifyEmailRequest,
+    ResendVerificationRequest,
     MessageResponse,
     SessionResponse,
 )
 from app.services.auth_service import AuthService
+
 
 router = APIRouter(
     prefix="/auth",
@@ -131,3 +134,26 @@ def sessions(
     return service.get_sessions(
         current_user,
     )
+
+@router.post(
+    "/verify-email",
+    response_model=MessageResponse,
+)
+def verify_email(
+    request: VerifyEmailRequest,
+    db: Session = Depends(get_db),
+):
+    service = AuthService(db)
+    return service.verify_email(request)
+
+
+@router.post(
+    "/resend-verification",
+    response_model=MessageResponse,
+)
+def resend_verification(
+    request: ResendVerificationRequest,
+    db: Session = Depends(get_db),
+):
+    service = AuthService(db)
+    return service.resend_verification(request)

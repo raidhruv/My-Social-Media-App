@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import DateTime, ForeignKey, String
@@ -74,6 +74,4 @@ class RefreshSession(BaseModel):
 
     @property
     def is_expired(self) -> bool:
-        return (
-            self.expires_at <= datetime.utcnow()
-        )
+        return self.expires_at <= datetime.now(timezone.utc)

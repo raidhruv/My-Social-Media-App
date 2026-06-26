@@ -42,3 +42,8 @@ class User(BaseModel):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    email_verification_tokens = relationship(
+        "EmailVerificationToken",
+        back_populates="user",
+        cascade="all, delete-orphan",
+)

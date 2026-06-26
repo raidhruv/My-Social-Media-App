@@ -7,7 +7,11 @@ from alembic import context
 from app.core.config import settings
 from app.models.user import User
 from app.models.refresh_session import RefreshSession
+from app.models.email_verification_token import (
+    EmailVerificationToken,
+)
 from app.db.base import Base
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

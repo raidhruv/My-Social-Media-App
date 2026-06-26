@@ -24,6 +24,16 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str
 
+    # SMTP
+    SMTP_HOST: str
+    SMTP_PORT: int
+    SMTP_USERNAME: str
+    SMTP_PASSWORD: str
+    SMTP_FROM_EMAIL: str
+
+    # Frontend
+    FRONTEND_URL: str
+
     # JWT
     JWT_SECRET: str
     JWT_ALGORITHM: str = Field(default="HS256")

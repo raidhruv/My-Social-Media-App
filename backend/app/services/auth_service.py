@@ -5,32 +5,51 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+
+from app.models.email_verification_token import (
+    EmailVerificationToken,
+)
 from app.models.refresh_session import RefreshSession
 from app.models.user import User
+
+from app.repositories.email_verification_repository import (
+    EmailVerificationRepository,
+)
 from app.repositories.refresh_session_repository import (
     RefreshSessionRepository,
 )
 from app.repositories.user_repository import UserRepository
+
 from app.schemas.auth import (
-    AccessTokenResponse,
     LoginRequest,
     MessageResponse,
     RefreshTokenRequest,
     SessionResponse,
     Token,
+    VerifyEmailRequest,
+    ResendVerificationRequest,
 )
 from app.schemas.user import UserCreate
+
+from app.services.email_service import EmailService
+
 from app.utils.jwt import (
     create_access_token,
     create_refresh_session,
     create_refresh_token,
     verify_token,
 )
+
 from app.utils.security import (
     hash_password,
     hash_refresh_token,
     verify_password,
     verify_refresh_token,
+)
+
+from app.utils.token import (
+    generate_verification_token,
+    hash_verification_token,
 )
 
 
@@ -40,8 +59,18 @@ class AuthService:
         db: Session,
     ):
         self.db = db
+
         self.user_repository = UserRepository(db)
-        self.refresh_repository = RefreshSessionRepository(db)
+
+        self.refresh_repository = (
+            RefreshSessionRepository(db)
+        )
+
+        self.email_verification_repository = (
+            EmailVerificationRepository(db)
+        )
+
+        self.email_service = EmailService()
 
     def register(
         self,
@@ -70,10 +99,181 @@ class AuthService:
             hashed_password=hash_password(
                 user_data.password,
             ),
+            is_verified=False,
         )
 
-        return self.user_repository.create(
+        user = self.user_repository.create(
             user,
+        )
+
+        self.email_verification_repository.delete_by_user_id(
+            user.id,
+        )
+
+        verification_token = (
+            generate_verification_token()
+        )
+
+        verification_hash = (
+            hash_verification_token(
+                verification_token,
+            )
+        )
+
+        token = EmailVerificationToken(
+            user_id=user.id,
+            token_hash=verification_hash,
+            expires_at=datetime.now(
+                timezone.utc,
+            )
+            + timedelta(hours=24),
+        )
+
+        self.email_verification_repository.create(
+            token,
+        )
+
+        verification_url = (
+            f"{settings.FRONTEND_URL}"
+            f"/verify-email"
+            f"?token={verification_token}"
+        )
+
+        self.email_service.send_verification_email(
+            email=user.email,
+            username=user.username,
+            verification_url=verification_url,
+        )
+
+        return user
+
+    def verify_email(
+        self,
+        request: VerifyEmailRequest,
+    ) -> MessageResponse:
+
+        token_hash = hash_verification_token(
+            request.token,
+        )
+
+        verification = (
+            self.email_verification_repository.get_by_token_hash(
+                token_hash,
+            )
+        )
+
+        if verification is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid verification token.",
+            )
+
+        if verification.expires_at <= datetime.now(
+            timezone.utc,
+        ):
+            self.email_verification_repository.delete(
+                verification,
+            )
+
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Verification token has expired.",
+            )
+
+        user = self.user_repository.get_by_id(
+            verification.user_id,
+        )
+
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found.",
+            )
+
+        if user.is_verified:
+            self.email_verification_repository.delete(
+                verification,
+            )
+
+            return MessageResponse(
+                message="Email already verified.",
+            )
+
+        user.is_verified = True
+
+        self.db.commit()
+        self.db.refresh(user)
+
+        self.email_verification_repository.delete(
+            verification,
+        )
+
+        return MessageResponse(
+            message="Email verified successfully.",
+        )
+
+    def resend_verification(
+        self,
+        request: ResendVerificationRequest,
+    ) -> MessageResponse:
+
+        user = self.user_repository.get_by_email(
+            request.email,
+        )
+
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found.",
+            )
+
+        if user.is_verified:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already verified.",
+            )
+
+        self.email_verification_repository.delete_by_user_id(
+            user.id,
+        )
+
+        verification_token = (
+            generate_verification_token()
+        )
+
+        verification_hash = (
+            hash_verification_token(
+                verification_token,
+            )
+        )
+
+        verification = EmailVerificationToken(
+            user_id=user.id,
+            token_hash=verification_hash,
+            expires_at=datetime.now(
+                timezone.utc,
+            )
+            + timedelta(hours=24),
+        )
+
+        self.email_verification_repository.create(
+            verification,
+        )
+
+        verification_url = (
+            f"{settings.FRONTEND_URL}"
+            f"/verify-email"
+            f"?token={verification_token}"
+        )
+
+        self.email_service.send_verification_email(
+            email=user.email,
+            username=user.username,
+            verification_url=verification_url,
+        )
+
+        return MessageResponse(
+            message="Verification email sent.",
         )
 
     def authenticate_user(
@@ -105,6 +305,12 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Account is disabled.",
+            )
+
+        if not user.is_verified:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Please verify your email before logging in.",
             )
 
         return user
@@ -140,7 +346,7 @@ class AuthService:
         return self.refresh_repository.create(
             session,
         )
-    
+
     def login(
         self,
         login_data: LoginRequest,
@@ -178,7 +384,6 @@ class AuthService:
             access_token=access_token,
             refresh_token=refresh_token,
         )
-
 
     def _get_valid_session(
         self,
@@ -236,7 +441,7 @@ class AuthService:
             )
 
         return session, user
-    
+
     def refresh(
         self,
         refresh_data: RefreshTokenRequest,
@@ -244,7 +449,7 @@ class AuthService:
 
         session, user = self._get_valid_session(
             refresh_data.refresh_token,
-    )   
+        )
 
         self.refresh_repository.revoke(
             session,
@@ -275,7 +480,6 @@ class AuthService:
             refresh_token=refresh_token,
         )
 
-
     def logout(
         self,
         refresh_token: str,
@@ -293,7 +497,6 @@ class AuthService:
             message="Logged out successfully.",
         )
 
-
     def logout_all(
         self,
         user: User,
@@ -306,7 +509,6 @@ class AuthService:
         return MessageResponse(
             message="Logged out from all devices.",
         )
-
 
     def get_sessions(
         self,
