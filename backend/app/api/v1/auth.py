@@ -17,6 +17,8 @@ from app.schemas.auth import (
     Token,
     VerifyEmailRequest,
     ResendVerificationRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
     MessageResponse,
     SessionResponse,
 )
@@ -157,3 +159,25 @@ def resend_verification(
 ):
     service = AuthService(db)
     return service.resend_verification(request)
+
+@router.post(
+    "/forgot-password",
+    response_model=MessageResponse,
+)
+def forgot_password(
+    request: ForgotPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    service = AuthService(db)
+    return service.forgot_password(request)
+
+@router.post(
+    "/reset-password",
+    response_model=MessageResponse,
+)
+def reset_password(
+    request: ResetPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    service = AuthService(db)
+    return service.reset_password(request)

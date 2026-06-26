@@ -9,6 +9,9 @@ from app.core.config import settings
 from app.models.email_verification_token import (
     EmailVerificationToken,
 )
+from app.models.password_reset_token import (
+    PasswordResetToken,
+)
 from app.models.refresh_session import RefreshSession
 from app.models.user import User
 
@@ -19,6 +22,9 @@ from app.repositories.refresh_session_repository import (
     RefreshSessionRepository,
 )
 from app.repositories.user_repository import UserRepository
+from app.repositories.password_reset_repository import (
+    PasswordResetRepository,
+)
 
 from app.schemas.auth import (
     LoginRequest,
@@ -28,6 +34,8 @@ from app.schemas.auth import (
     Token,
     VerifyEmailRequest,
     ResendVerificationRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
 )
 from app.schemas.user import UserCreate
 
@@ -48,8 +56,9 @@ from app.utils.security import (
 )
 
 from app.utils.token import (
-    generate_verification_token,
-    hash_verification_token,
+    generate_secure_token,
+    hash_secure_token,
+    verify_secure_token,
 )
 
 
@@ -68,6 +77,10 @@ class AuthService:
 
         self.email_verification_repository = (
             EmailVerificationRepository(db)
+        )
+
+        self.password_reset_repository = (
+            PasswordResetRepository(db)
         )
 
         self.email_service = EmailService()
@@ -111,11 +124,11 @@ class AuthService:
         )
 
         verification_token = (
-            generate_verification_token()
+            generate_secure_token()
         )
 
         verification_hash = (
-            hash_verification_token(
+            hash_secure_token(
                 verification_token,
             )
         )
@@ -152,7 +165,7 @@ class AuthService:
         request: VerifyEmailRequest,
     ) -> MessageResponse:
 
-        token_hash = hash_verification_token(
+        token_hash = hash_secure_token(
             request.token,
         )
 
@@ -238,11 +251,11 @@ class AuthService:
         )
 
         verification_token = (
-            generate_verification_token()
+            generate_secure_token()
         )
 
         verification_hash = (
-            hash_verification_token(
+            hash_secure_token(
                 verification_token,
             )
         )
@@ -274,6 +287,127 @@ class AuthService:
 
         return MessageResponse(
             message="Verification email sent.",
+        )
+
+    def forgot_password(
+        self,
+        request: ForgotPasswordRequest,
+    ) -> MessageResponse:
+
+        user = self.user_repository.get_by_email(
+            request.email,
+        )
+
+        if user is None:
+            return MessageResponse(
+                message=(
+                    "If the account exists, a password "
+                    "reset email has been sent."
+                ),
+            )
+
+        self.password_reset_repository.delete_by_user_id(
+            user.id,
+        )
+
+        reset_token = generate_secure_token()
+
+        reset_hash = hash_secure_token(
+            reset_token,
+        )
+
+        token = PasswordResetToken(
+            user_id=user.id,
+            token_hash=reset_hash,
+            expires_at=datetime.now(
+                timezone.utc,
+            )
+            + timedelta(hours=1),
+        )
+
+        self.password_reset_repository.create(
+            token,
+        )
+
+        reset_url = (
+            f"{settings.FRONTEND_URL}"
+            f"/reset-password"
+            f"?token={reset_token}"
+        )
+
+        self.email_service.send_password_reset_email(
+            email=user.email,
+            username=user.username,
+            reset_url=reset_url,
+        )
+
+        return MessageResponse(
+            message=(
+                "If the account exists, a password "
+                "reset email has been sent."
+            ),
+        )
+
+    def reset_password(
+        self,
+        request: ResetPasswordRequest,
+    ) -> MessageResponse:
+
+        token_hash = hash_secure_token(
+            request.token,
+        )
+
+        reset = (
+            self.password_reset_repository.get_by_token_hash(
+                token_hash,
+            )
+        )
+
+        if reset is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid reset token.",
+            )
+
+        if reset.expires_at <= datetime.now(
+            timezone.utc,
+        ):
+            self.password_reset_repository.delete(
+                reset,
+            )
+
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Reset token has expired.",
+            )
+
+        user = self.user_repository.get_by_id(
+            reset.user_id,
+        )
+
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found.",
+            )
+
+        user.hashed_password = hash_password(
+            request.password,
+        )
+
+        self.db.commit()
+        self.db.refresh(user)
+
+        self.refresh_repository.revoke_all(
+            user.id,
+        )
+
+        self.password_reset_repository.delete(
+            reset,
+        )
+
+        return MessageResponse(
+            message="Password reset successfully.",
         )
 
     def authenticate_user(

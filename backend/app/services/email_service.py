@@ -101,3 +101,58 @@ class EmailService:
             subject="Verify your email",
             html=html,
         )
+    def send_password_reset_email(
+        self,
+        email: str,
+        username: str,
+        reset_url: str,
+    ) -> None:
+
+        subject = "Reset Your Password"
+
+        html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif;">
+            <h2>Password Reset</h2>
+
+            <p>Hello <b>{username}</b>,</p>
+
+            <p>
+                We received a request to reset your password.
+            </p>
+
+            <p>
+                Click the button below to create a new password.
+            </p>
+
+            <p>
+                <a
+                    href="{reset_url}"
+                    style="
+                        background:#2563eb;
+                        color:white;
+                        padding:12px 24px;
+                        text-decoration:none;
+                        border-radius:6px;
+                    "
+                >
+                    Reset Password
+                </a>
+            </p>
+
+            <p>
+                This link expires in 1 hour.
+            </p>
+
+            <p>
+                If you didn't request this, you can safely ignore this email.
+            </p>
+        </body>
+        </html>
+        """
+
+        self.send_email(
+            to_email=email,
+            subject=subject,
+            html=html,
+        )
