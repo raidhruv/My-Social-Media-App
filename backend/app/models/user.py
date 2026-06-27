@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, String
+from sqlalchemy import Boolean, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
 from app.models.base_model import BaseModel
@@ -24,6 +24,41 @@ class User(BaseModel):
     hashed_password: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
+    )
+
+    first_name: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+
+    last_name: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+
+    bio: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    avatar_url: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+
+    banner_url: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+
+    location: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    website: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
     )
 
     is_active: Mapped[bool] = mapped_column(
