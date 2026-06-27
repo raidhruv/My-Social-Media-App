@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     # Frontend
     FRONTEND_URL: str
 
+    # Cloudinary
+    CLOUDINARY_CLOUD_NAME: str
+    CLOUDINARY_API_KEY: str
+    CLOUDINARY_API_SECRET: str
+
     # JWT
     JWT_SECRET: str
     JWT_ALGORITHM: str = Field(default="HS256")

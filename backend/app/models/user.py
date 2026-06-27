@@ -46,8 +46,18 @@ class User(BaseModel):
         nullable=True,
     )
 
+    avatar_public_id: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
     banner_url: Mapped[str | None] = mapped_column(
         String(500),
+        nullable=True,
+    )
+
+    banner_public_id: Mapped[str | None] = mapped_column(
+        String(255),
         nullable=True,
     )
 
