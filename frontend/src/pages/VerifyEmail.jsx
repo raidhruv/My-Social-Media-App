@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../services/api"
 
 const styles = `
@@ -168,7 +168,8 @@ const styles = `
 `;
 
 const VerifyEmail = () => {
-    const { token } = useParams();
+    const [searchParams] = useSearchParams();
+    const token = searchParams.get("token");
     const navigate = useNavigate();
 
     const [message, setMessage] = useState("Verifying email...");
@@ -177,14 +178,17 @@ const VerifyEmail = () => {
     useEffect(() => {
         const verifyUserEmail = async () => {
             try {
-                const response = await api.get(
-                    `/auth/verify-email/${token}`
+                const response = await api.post(
+                    "/auth/verify-email",
+                    {
+                        token,
+                    }
                 );
                 setMessage(response.data.message);
                 setStatus("success");
                 setTimeout(() => { navigate("/login"); }, 3000);
             } catch (error) {
-                setMessage(error.response?.data?.message || "Verification failed");
+                setMessage(error.response?.data?.detail ?? "Verification failed.");
                 setStatus("error");
             }
         };

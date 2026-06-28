@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api=axios.create({
-baseURL:"http://localhost:5000/api"
+baseURL: "http://localhost:8000/api/v1"
 });
 
 api.interceptors.request.use(config=>{
@@ -21,17 +21,29 @@ async error=>{
 
 const originalRequest=error.config;
 
-if(error.response?.status===401&&!originalRequest._retry){
+if (
+    error.response?.status === 401 &&
+    !originalRequest._retry &&
+    !originalRequest.url.includes("/auth/login") &&
+    !originalRequest.url.includes("/auth/register") &&
+    !originalRequest.url.includes("/auth/refresh")
+) {
 
 originalRequest._retry=true;
 
 try{
 
-const refreshToken=localStorage.getItem("refreshToken");
+const refreshToken = localStorage.getItem("refreshToken");
 
-const response = await api.post("/auth/refresh", { refreshToken });
+if (!refreshToken) {
+    return Promise.reject(error);
+}
 
-const newAccessToken=response.data.accessToken;
+const response = await api.post("/auth/refresh", {
+    refresh_token: refreshToken,
+});
+
+const newAccessToken = response.data.access_token;
 
 localStorage.setItem("accessToken",newAccessToken);
 

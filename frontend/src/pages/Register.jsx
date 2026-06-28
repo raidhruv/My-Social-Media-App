@@ -245,8 +245,17 @@ function Register() {
     e.preventDefault();
     if (!agreed || pwMismatch) return;
     setLoading(true); setStatus(null);
+
+// changes to work with new backend server 
+
     try {
-      const data = await api.post('/auth/signup', form);
+      const data = await api.post("/auth/register", {
+          username: form.username,
+          email: form.email,
+          password: form.password,
+          first_name: form.firstName,
+          last_name: form.lastName,
+      });
       console.log(data);
       setStatus('success');
       setTimeout(() => {

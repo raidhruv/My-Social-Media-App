@@ -141,8 +141,17 @@ function Login() {
     try {
       const response = await api.post('/auth/login', formData);
       console.log(response.data);
-      localStorage.setItem('accessToken', response.data.accessToken);
-      localStorage.setItem("refreshToken",response.data.refreshToken);
+      
+      //changes to work with the new backend response structure
+      
+      localStorage.setItem(
+        "accessToken",
+        response.data.access_token
+      );
+      localStorage.setItem(
+        "refreshToken",
+        response.data.refresh_token
+      );
       setMessage('Login successful! Redirecting...');
       setIsError(false);
       setTimeout(() => navigate('/dashboard'), 1000);

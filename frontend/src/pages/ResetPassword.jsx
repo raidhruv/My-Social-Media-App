@@ -1,6 +1,10 @@
 import { useState } from "react";
 import api from "../services/api"
-import { useParams, useNavigate, Link } from "react-router-dom";
+import {
+    Link,
+    useNavigate,
+    useSearchParams,
+} from "react-router-dom";
 
 const C = {
   bg: '#0d0d0d',
@@ -133,7 +137,8 @@ const getStrength = (pw) => {
 };
 
 function ResetPassword() {
-  const { token } = useParams();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token");
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -155,14 +160,20 @@ function ResetPassword() {
     setMessage('');
     try {
       const response = await api.post(
-        `/auth/reset-password/${token}`,
-        { password }
+          "/auth/reset-password",
+          {
+              token,
+              password,
+          }
       );
       setMessage(response.data.message);
       setIsError(false);
       setTimeout(() => navigate('/login'), 2000);
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Reset failed. Please try again.');
+      setMessage(
+          error.response?.data?.detail ??
+          "Reset failed. Please try again."
+      );
       setIsError(true);
     } finally {
       setLoading(false);

@@ -9,7 +9,10 @@ export default function useCurrentUser() {
   const refreshUser = useCallback(async () => {
     try {
       const { data } = await api.get("/users/me");
-      setUser(data.user);
+
+      // The backend returns user data in the response
+
+      setUser(data);
     } catch (err) {
       console.error(err);
       setUser(null);

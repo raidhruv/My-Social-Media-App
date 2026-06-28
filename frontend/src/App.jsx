@@ -20,9 +20,9 @@ function App() {
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>}/>
         <Route path="/profile/:username" element={<Profile/>}/>
         <Route path="/forgot-password" element={<ForgotPassword />}/>
-        <Route path="/reset-password/:token" element={<ResetPassword />}/>
+        <Route path="/reset-password" element={<ResetPassword />}/>
         <Route path="/verification-pending" element={<VerificationPending />}/>
-        <Route path="/verify-email/:token" element={<VerifyEmail />}/>
+        <Route path="/verify-email" element={<VerifyEmail />}/>
         <Route path="/post/:postId" element={<ProtectedRoute><Post /></ProtectedRoute>}/>
       </Routes>
     </BrowserRouter>
