@@ -7,6 +7,15 @@ export default function useCurrentUser() {
   const [loading, setLoading] = useState(true);
 
   const refreshUser = useCallback(async () => {
+
+    const token = localStorage.getItem("accessToken");
+
+    if (!token) {
+        setUser(null);
+        setLoading(false);
+        return;
+    }
+
     try {
       const { data } = await api.get("/users/me");
 
