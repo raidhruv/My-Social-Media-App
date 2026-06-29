@@ -72,28 +72,43 @@ class MediaService:
         self,
         public_id: str,
     ) -> None:
-        pass
+        try:
+            cloudinary.uploader.destroy(
+                public_id,
+                resource_type="image",
+            )
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to delete image.",
+            )
 
     def upload_avatar(
         self,
         file: UploadFile,
     ) -> tuple[str, str]:
-        pass
+        return self._upload_image(
+            file=file,
+            folder="avatars",
+        )
 
     def delete_avatar(
         self,
         public_id: str,
     ) -> None:
-        pass
+        self._delete_image(public_id)
 
     def upload_banner(
         self,
         file: UploadFile,
     ) -> tuple[str, str]:
-        pass
+        return self._upload_image(
+            file=file,
+            folder="banners",
+        )
 
     def delete_banner(
         self,
         public_id: str,
     ) -> None:
-        pass
+        self._delete_image(public_id)

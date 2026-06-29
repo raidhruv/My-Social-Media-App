@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.orm import Session
 from uuid import UUID
 from app.core.dependencies import get_current_active_user
@@ -64,4 +64,72 @@ def update_me(
     return service.update_profile(
         current_user=current_user,
         user_update=user_update,
+    )
+
+@router.patch(
+    "/me/avatar",
+    response_model=UserResponse,
+)
+def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(
+        get_current_active_user,
+    ),
+    db: Session = Depends(get_db),
+):
+    service = UserService(db)
+
+    return service.upload_avatar(
+        current_user=current_user,
+        file=file,
+    )
+
+@router.delete(
+    "/me/avatar",
+    response_model=UserResponse,
+)
+def delete_avatar(
+    current_user: User = Depends(
+        get_current_active_user,
+    ),
+    db: Session = Depends(get_db),
+):
+    service = UserService(db)
+
+    return service.delete_avatar(
+        current_user=current_user,
+    )
+
+@router.patch(
+    "/me/banner",
+    response_model=UserResponse,
+)
+def upload_banner(
+    file: UploadFile = File(...),
+    current_user: User = Depends(
+        get_current_active_user,
+    ),
+    db: Session = Depends(get_db),
+):
+    service = UserService(db)
+
+    return service.upload_banner(
+        current_user=current_user,
+        file=file,
+    )
+
+@router.delete(
+    "/me/banner",
+    response_model=UserResponse,
+)
+def delete_banner(
+    current_user: User = Depends(
+        get_current_active_user,
+    ),
+    db: Session = Depends(get_db),
+):
+    service = UserService(db)
+
+    return service.delete_banner(
+        current_user=current_user,
     )
