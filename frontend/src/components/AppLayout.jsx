@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import TopBar from "./TopBar";
 import LeftSidebar from "./LeftSidebar";
 import RightSidebar from "./RightSidebar";
-import useCurrentUser from "../hooks/useCurrentUser";
+import { useCurrentUserContext } from "../context/CurrentUserContext";
 
 const C = {
   bg: '#0d0d0d',
@@ -45,16 +45,17 @@ function AppLayout({
 }) {
 
   const navigate = useNavigate();
-  const { user, loading } = useCurrentUser();
+  const {user, loading, refreshUser, setUser} = useCurrentUserContext();
 
   const [activeNav, setActiveNav] = useState("home");
   const [followed, setFollowed] = useState({});
 
   const logout = () => {
     localStorage.removeItem("accessToken");
-    navigate("/login");
+    localStorage.removeItem("refreshToken");
+    setUser(null);
+    navigate("/login", { replace: true });
   };
-
   const toggleFollow = (name) => setFollowed(p => ({ ...p, [name]: !p[name] }));
 
   const initials =

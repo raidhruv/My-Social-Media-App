@@ -101,10 +101,10 @@ function LeftSidebar({
     }}
     onClick={() => navigate('/profile')}
   >
-        <div style={{...s.profileBanner,background:profile?.bannerImage?`url(${profile.bannerImage}) center/cover`:s.profileBanner.background}}>
+        <div style={{...s.profileBanner,background:profile?.banner_url?`url(${profile.banner_url}) center/cover`:s.profileBanner.background}}>
           <div style={s.profileAvatarWrap}>
             <div style={s.profileAvatar}>
-              {profile?.profilePicture?<img src={profile.profilePicture} alt="" style={{width:"100%",height:"100%",borderRadius:"50%",objectFit:"cover"}}/>:initials}
+              {profile?.avatar_url?<img src={profile.avatar_url} alt="" style={{width:"100%",height:"100%",borderRadius:"50%",objectFit:"cover"}}/>:initials}
               <div style={s.onlineDot} />
             </div>
           </div>

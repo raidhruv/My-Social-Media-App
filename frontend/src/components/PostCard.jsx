@@ -110,9 +110,9 @@ function PostCard({ post, currentUserId, onDelete }) {
             flexShrink: 0
           }}
         >
-          {displayPost.author?.profilePicture ? (
+          {displayPost.author?.avatar_url ? (
             <img
-              src={displayPost.author.profilePicture}
+              src={displayPost.author.avatar_url}
               alt=""
               style={{
                 width: "100%",

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../services/api";
 import { useNavigate, Link } from "react-router-dom";
+import { useCurrentUserContext } from "../context/CurrentUserContext";
 
 const C = {
   bg: '#0d0d0d',
@@ -121,6 +122,7 @@ const s = {
 
 function Login() {
   const navigate = useNavigate();
+  const { refreshUser } = useCurrentUserContext();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [focused, setFocused] = useState(null);
   const [showPw, setShowPw] = useState(false);
@@ -128,11 +130,6 @@ function Login() {
   const [isError, setIsError] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (localStorage.getItem('accessToken')) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [navigate]);
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -148,13 +145,16 @@ function Login() {
         "accessToken",
         response.data.access_token
       );
+
       localStorage.setItem(
         "refreshToken",
         response.data.refresh_token
       );
-      setMessage('Login successful! Redirecting...');
+      
+      await refreshUser();
+      setMessage("Login successful! Redirecting...");
       setIsError(false);
-      setTimeout(() => navigate('/dashboard'), 1000);
+      navigate("/dashboard", { replace: true });
     } catch (error) {
       setMessage(error.response?.data?.message || 'Login failed. Please try again.');
       setIsError(true);

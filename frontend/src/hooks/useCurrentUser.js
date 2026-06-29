@@ -37,6 +37,7 @@ export default function useCurrentUser() {
   return {
     user,
     loading,
-    refreshUser
+    refreshUser,
+    setUser
   };
 }

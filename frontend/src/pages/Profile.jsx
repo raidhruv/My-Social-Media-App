@@ -443,24 +443,18 @@ fetchProfile();
   const updateProfile = async () => {
     try {
       const response = await api.patch("/users/profile", form);
-      const u=response.data.user;
+      const u = response.data;
       setProfile(u);
       await loadFeed(u.username);
       /*const statusResponse=await api.get(`http://localhost:5000/api/users/follow-status/${u.username}`,{headers:{Authorization:`Bearer ${token}`}});
       setFollowStatus(statusResponse.data.status);*/
       setForm({
-        firstName:
-        u.firstName || '',
-        lastName:
-        u.lastName || '',
-        bio:
-        u.bio || '',
-        location:
-        u.location || '',
-        website:
-        u.website || '',
-        isPrivate:
-        u.isPrivate || false
+        firstName: u.first_name || '',
+        lastName: u.last_name || '',
+        bio: u.bio || '',
+        location: u.location || '',
+        website: u.website || '',
+        isPrivate: u.isPrivate || false
       });
       setEditing(false);
 
@@ -479,16 +473,16 @@ fetchProfile();
       if(!file) return;
         setUploading(true);
       const formData =new FormData();
-      formData.append("profilePicture", file);
+      formData.append("avatar_url", file);
     
       const response = await api.patch("/users/profile-picture",formData);
       setProfile(
         prev => ({...prev,
-        profilePicture:
+        avatar_url:
         response
         .data
         .user
-        .profilePicture
+        .avatar_url
       })
     );
   }
@@ -509,18 +503,18 @@ async (e)=>{
     const formData =
     new FormData();
     formData.append(
-      "bannerImage",
+      "banner_url",
       file
     );
     const response =
     await api.patch("/users/banner",formData);
     setProfile(
       prev => ({...prev,
-        bannerImage:
+        banner_url:
         response
         .data
         .user
-        .bannerImage
+        .banner_url
       })
     );
   }
@@ -597,7 +591,7 @@ const initials = profile
           <div style={s.topbarRight}>
             <NotificationBell style={s.notifBtn} dotStyle={s.notifDot}/>
             <div style={s.avatarSmall}>
-            {profile?.profilePicture?<img src={profile.profilePicture} alt="" style={{width:"100%",height:"100%",borderRadius:"50%",objectFit:"cover"}}/>:initials}
+            {profile?.avatar_url?<img src={profile.avatar_url} alt="" style={{width:"100%",height:"100%",borderRadius:"50%",objectFit:"cover"}}/>:initials}
             </div>
           </div>
         </div>
@@ -609,7 +603,7 @@ const initials = profile
 
             {/* Hero card */}
             <div style={s.card}>
-              <div style={{...s.coverBg, background:profile?.bannerImage?`url(${profile.bannerImage}) center/cover` : s.coverBg.background, cursor:"pointer"}} onClick={()=>{
+              <div style={{...s.coverBg, background:profile?.banner_url?`url(${profile.banner_url}) center/cover` : s.coverBg.background, cursor:"pointer"}} onClick={()=>{
                 if(isOwnProfile){
                   document.getElementById("bannerUpload").click();
                 }
@@ -621,7 +615,7 @@ const initials = profile
                       document.getElementById("avatarUpload").click();
                     }
                   }}>
-                    {profile?.profilePicture?(<img src={profile.profilePicture} alt="avatar" style={{ width:"100%", height:"100%", borderRadius:"50%", objectFit:"cover"}}/>) : (initials)}
+                    {profile?.avatar_url?(<img src={profile.avatar_url} alt="avatar" style={{ width:"100%", height:"100%", borderRadius:"50%", objectFit:"cover"}}/>) : (initials)}
                     {uploading && (<div style={{position:"absolute", bottom:-28, left:"50%", transform: "translateX(-50%)", fontSize:11, color:"#aaa"}}>Uploading...</div>)}
                     <div style={s.onlineDot} />
                   </div>
@@ -923,9 +917,9 @@ const initials = profile
               navigate(`/profile/${item.follower.username}`);
             }}
           >
-          {item.follower.profilePicture?(
+          {item.follower.avatar_url?(
           <img
-          src={item.follower.profilePicture}
+          src={item.follower.avatar_url}
           alt=""
           style={s.userAvatar}
           />
@@ -980,9 +974,9 @@ const initials = profile
               navigate(`/profile/${item.following.username}`);
             }}
           >
-          {item.following.profilePicture?(
+          {item.following.avatar_url?(
           <img
-          src={item.following.profilePicture}
+          src={item.following.avatar_url}
           alt=""
           style={s.userAvatar}
           />

@@ -88,7 +88,7 @@ function SearchBar(){
       >
        <img
         src={
-         user.profilePicture
+         user.avatar_url
         }
         alt=""
         style={{

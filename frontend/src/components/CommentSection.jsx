@@ -165,9 +165,9 @@ function CommentSection({
             background: "linear-gradient(135deg,#7c3aed,#ec4899)",
             flexShrink: 0
           }}>
-            {comment.author?.profilePicture ? (
+            {comment.author?.avatar_url ? (
               <img
-                src={comment.author.profilePicture}
+                src={comment.author.avatar_url}
                 alt=""
                 style={{
                   width: "100%",

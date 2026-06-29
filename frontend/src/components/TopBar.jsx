@@ -118,7 +118,7 @@ function TopBar({
       <div style={s.topbarRight}>
         <NotificationBell style={s.notifBtn} dotStyle={s.notifDot}/>
         <div style={s.avatarSmall} onClick={() => navigate('/profile')}>
-          {profile?.profilePicture?<img src={profile.profilePicture} alt="" style={{width:"100%",height:"100%",borderRadius:"50%",objectFit:"cover"}}/>:initials}
+          {profile?.avatar_url?<img src={profile.avatar_url} alt="" style={{width:"100%",height:"100%",borderRadius:"50%",objectFit:"cover"}}/>:initials}
         </div>
       </div>
     </div>
