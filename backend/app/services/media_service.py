@@ -57,11 +57,9 @@ class MediaService:
                 resource_type="image",
             )
 
-        except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to upload image.",
-            )
+        except Exception as e:
+            print("Cloudinary upload error:", repr(e))
+            raise
 
         return (
             result["secure_url"],

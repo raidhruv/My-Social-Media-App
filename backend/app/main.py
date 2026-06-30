@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import app.utils.cloudinary
 from app.api.v1.auth import router as auth_router
 from app.core.config import settings
 from app.api.v1.users import router as users_router
