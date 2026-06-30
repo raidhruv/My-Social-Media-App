@@ -110,7 +110,11 @@ function LeftSidebar({
           </div>
         </div>
         <div style={s.profileInfo}>
-          <div style={s.profileName}>{profile?.firstName?`${profile.firstName} ${profile.lastName||''}`.trim():profile?.username}</div>
+          <div style={s.profileName}>
+            {profile?.first_name
+              ? `${profile.first_name} ${profile.last_name || ""}`.trim()
+              : profile?.username}
+          </div>
           <div style={s.profileHandle}>@{profile?.username}</div>
           <div style={s.profileBio}>{profile?.bio||"No bio yet."}</div>
         </div>

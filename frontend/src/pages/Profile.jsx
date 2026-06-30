@@ -5,6 +5,7 @@ import CreatePost from "../components/CreatePost";
 import {getFeed,getUserPosts,deletePost,getBookmarkedPosts,getUserReposts} from "../services/postApi";
 import PostCard from "../components/PostCard";
 import { useNavigate,useParams } from "react-router-dom";
+import { useCurrentUserContext } from "../context/CurrentUserContext";
 
 const C = {
   bg: '#0d0d0d',
@@ -149,6 +150,17 @@ const s = {
     border: `1px solid ${C.accent}`,
     color: C.accent, cursor: 'pointer',
     fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
+  },
+  removeImageButton: {
+    marginTop: 8,
+    padding: '6px 12px',
+    background: '#ef4444',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 8,
+    cursor: 'pointer',
+    fontSize: 12,
+    fontWeight: 600,
   },
 
   // name row in edit mode
@@ -329,6 +341,7 @@ const MUTUAL = [
 const SKILLS = ['React','Node.js','TypeScript','PostgreSQL','Docker','REST APIs','Tailwind CSS','Git'];
 
 function Profile() {
+  const { user, refreshUser } = useCurrentUserContext();
   const navigate = useNavigate();
   const {username}=useParams();
   const [followed, setFollowed] = useState({});
@@ -396,7 +409,7 @@ const response=username
  ? await api.get(`/users/${username}`)
  : await api.get("/users/me");
 
-const u=response.data.user;
+const u = response.data;
 setProfile(u);
 await loadFeed(u.username);
 await loadBookmarks();
@@ -404,16 +417,16 @@ await loadReposts(u.username);
 const meResponse=await api.get("/users/me");
 
 setIsOwnProfile(
- meResponse.data.user.username===u.username
+  meResponse.data.username === u.username
 );
 
 setForm({
-firstName:u.firstName||'',
-lastName:u.lastName||'',
-bio:u.bio||'',
-location:u.location||'',
-website:u.website||'',
-isPrivate:u.isPrivate||false,
+    firstName: u.first_name || "",
+    lastName: u.last_name || "",
+    bio: u.bio || "",
+    location: u.location || "",
+    website: u.website || "",
+    isPrivate: u.is_private ?? false,
 });
 
 const [statusResponse, followersResponse, followingResponse] = await Promise.all([
@@ -442,7 +455,14 @@ fetchProfile();
 
   const updateProfile = async () => {
     try {
-      const response = await api.patch("/users/profile", form);
+      const response = await api.patch("/users/me", {
+        first_name: form.firstName,
+        last_name: form.lastName,
+        bio: form.bio,
+        location: form.location,
+        website: form.website,
+        is_private: form.isPrivate,
+      });
       const u = response.data;
       setProfile(u);
       await loadFeed(u.username);
@@ -454,7 +474,7 @@ fetchProfile();
         bio: u.bio || '',
         location: u.location || '',
         website: u.website || '',
-        isPrivate: u.isPrivate || false
+        isPrivate: u.is_private ?? false
       });
       setEditing(false);
 
@@ -466,6 +486,22 @@ fetchProfile();
   const toggleLike = (id) => setLikedPosts(p => ({ ...p, [id]: !p[id] }));
   const toggleFollow = (name) => setFollowed(p => ({ ...p, [name]: !p[name] }));
 
+  const handleDeleteAvatar = async () => {
+    try {
+      await api.delete("/users/me/avatar");
+
+      await refreshUser();
+
+      const updated = await api.get(
+        username ? `/users/${username}` : "/users/me"
+      );
+
+      setProfile(updated.data);
+    } catch (error) {
+      console.error("Delete avatar failed:", error);
+    }
+  };
+
   const handleAvatarUpload =
   async (e)=>{
     try{
@@ -473,18 +509,21 @@ fetchProfile();
       if(!file) return;
         setUploading(true);
       const formData =new FormData();
-      formData.append("avatar_url", file);
+      formData.append("file", file);
     
-      const response = await api.patch("/users/profile-picture",formData);
-      setProfile(
-        prev => ({...prev,
-        avatar_url:
-        response
-        .data
-        .user
-        .avatar_url
-      })
-    );
+      const response = 
+      await api.patch("/users/me/avatar", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      await refreshUser();
+
+      const updated = await api.get(
+        username ? `/users/${username}` : "/users/me"
+      );
+
+      setProfile(updated.data);
   }
       catch(error){
       console.error(error);
@@ -503,20 +542,22 @@ async (e)=>{
     const formData =
     new FormData();
     formData.append(
-      "banner_url",
+      "file",
       file
     );
     const response =
-    await api.patch("/users/banner",formData);
-    setProfile(
-      prev => ({...prev,
-        banner_url:
-        response
-        .data
-        .user
-        .banner_url
-      })
+    await api.patch("/users/me/banner", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    await refreshUser();
+
+    const updated = await api.get(
+      username ? `/users/${username}` : "/users/me"
     );
+
+    setProfile(updated.data);
   }
   catch(error){
     console.error(error);
@@ -562,7 +603,7 @@ const handleDeletePost=async(postId)=>{
 };
 
 const initials = profile
-    ? ((profile.firstName?.[0] || '') + (profile.lastName?.[0] || '')).toUpperCase() || profile.username?.[0]?.toUpperCase() || 'U'
+    ? ((profile.first_name?.[0] || '') + (profile.last_name?.[0] || '')).toUpperCase() || profile.username?.[0]?.toUpperCase() || 'U'
     : 'U';
 
   if (loading) return (
@@ -619,6 +660,15 @@ const initials = profile
                     {uploading && (<div style={{position:"absolute", bottom:-28, left:"50%", transform: "translateX(-50%)", fontSize:11, color:"#aaa"}}>Uploading...</div>)}
                     <div style={s.onlineDot} />
                   </div>
+                  {editing && profile?.avatar_url && (
+                    <button
+                      type="button"
+                      onClick={handleDeleteAvatar}
+                      style={s.removeImageButton}
+                    >
+                      Remove Avatar
+                    </button>
+                  )}
                 </div>
 
                 {/* Action buttons */}
@@ -629,18 +679,12 @@ const initials = profile
                   onClick={() => {
                     if(editing){
                       setForm({
-                        firstName:
-                        profile?.firstName || '',
-                        lastName:
-                        profile?.lastName || '',
-                        bio:
-                        profile?.bio || '',
-                        location:
-                        profile?.location || '',
-                        website:
-                        profile?.website || '',
-                        isPrivate:
-                        profile?.isPrivate || false
+                        firstName: profile?.first_name || "",
+                        lastName: profile?.last_name || "",
+                        bio: profile?.bio || "",
+                        location: profile?.location || "",
+                        website: profile?.website || "",
+                        isPrivate: profile?.is_private ?? false
                       });
                     }
                     setEditing(!editing);}}><i className="ti ti-pencil" style={{ fontSize:14 }}/>{editing?'Cancel' : 'Edit profile'}</button>
@@ -676,7 +720,11 @@ const initials = profile
                     />
                   </div>
                 ) : (
-                  <div style={s.heroName}>{profile?.firstName ? `${profile.firstName} ${profile.lastName || ''}`.trim() : profile?.username}</div>
+                  <div style={s.heroName}>
+                    {profile?.first_name
+                      ? `${profile.first_name} ${profile.last_name || ""}`.trim()
+                      : profile?.username}
+                  </div>
                 )}
 
                 <div style={s.heroHandle}>@{profile?.username}</div>
@@ -717,12 +765,12 @@ const initials = profile
                   ) : (
                     <span style={s.metaItem}>
                       <i className="ti ti-briefcase" style={{ fontSize: 13 }} />
-                      {profile?.isPrivate ? 'Private account' : 'Public account'}
+                      {profile?.is_private ? 'Private account' : 'Public account'}
                     </span>
                   )}
                   <span style={s.metaItem}>
                     <i className="ti ti-calendar" style={{ fontSize: 13 }} />
-                    Joined {new Date(profile?.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                    Joined {new Date(profile?.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                   </span>
                 </div>
 
@@ -939,7 +987,7 @@ const initials = profile
           )}
 
           <div style={s.userInfo}>
-          <div>{item.follower.firstName||item.follower.username}</div>
+          <div>{item.follower.first_name||item.follower.username}</div>
           <div style={{fontSize:12,color:C.textMuted}}>
           @{item.follower.username}
           </div>
@@ -996,7 +1044,7 @@ const initials = profile
           )}
 
           <div style={s.userInfo}>
-          <div>{item.following.firstName||item.following.username}</div>
+          <div>{item.following.first_name||item.following.username}</div>
           <div style={{fontSize:12,color:C.textMuted}}>
           @{item.following.username}
           </div>

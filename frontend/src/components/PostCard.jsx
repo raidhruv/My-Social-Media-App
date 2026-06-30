@@ -10,10 +10,15 @@ function PostCard({ post, currentUserId, onDelete }) {
   const displayPost = isRepost ? post.repostOf : post;
 
   const initials = (
-    displayPost.author?.firstName?.[0] ||
-    displayPost.author?.username?.[0] ||
-    "U"
-  ).toUpperCase();
+    (
+      displayPost.author?.first_name?.[0] || ""
+    ) +
+    (
+      displayPost.author?.last_name?.[0] || ""
+    )
+  ).toUpperCase() ||
+  displayPost.author?.username?.[0]?.toUpperCase() ||
+  "U";
 
   const navigate = useNavigate();
 
@@ -135,7 +140,9 @@ function PostCard({ post, currentUserId, onDelete }) {
               cursor: "pointer"
             }}
           >
-            {displayPost.author?.firstName || displayPost.author?.username}
+            {displayPost.author?.first_name
+              ? `${displayPost.author.first_name} ${displayPost.author.last_name ?? ""}`.trim()
+              : displayPost.author?.username}
           </div>
 
           <div style={{

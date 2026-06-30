@@ -4,8 +4,7 @@ import NotificationBell from "../components/NotificationBell";
 import {createPost,getFeed} from "../services/postApi";
 import PostCard from "../components/PostCard";
 import AppLayout from "../components/AppLayout";
-import useCurrentUser from "../hooks/useCurrentUser";
-
+import { useCurrentUserContext } from "../context/CurrentUserContext";
 const C = {
   bg: '#0d0d0d',
   surface: '#161616',
@@ -308,7 +307,7 @@ const LEFT_NAV = [
 ];
 
 function Dashboard() {
-  const { user } = useCurrentUser();
+  const { user } = useCurrentUserContext();
   const [postText, setPostText] = useState('');
   const [composing, setComposing] = useState(false);
   const [feed,setFeed]=useState([]);
@@ -352,7 +351,27 @@ loadFeed();
             {!composing ? (
               <>
                 <div style={s.createPost}>
-                  <div style={s.createAvatarMini}>D</div>
+                  <div style={s.createAvatarMini}>
+                    {user?.avatar_url ? (
+                      <img
+                        src={user.avatar_url}
+                        alt=""
+                        style={{
+                         width: "100%",
+                          height: "100%",
+                          borderRadius: "50%",
+                          objectFit: "cover"
+                        }}
+                      />
+                    ) : (
+                      (
+                        (user?.first_name?.[0] || "") +
+                        (user?.last_name?.[0] || "")
+                      ).toUpperCase() ||
+                      user?.username?.[0]?.toUpperCase() ||
+                      "U"
+                    )}
+                  </div>
                   <div
                     style={s.createInput}
                     onClick={() => setComposing(true)}
@@ -371,9 +390,33 @@ loadFeed();
             ) : (
               <div style={s.postBox}>
                 <div style={{ display:'flex', gap:'0.75rem', marginBottom:'0.75rem' }}>
-                  <div style={s.createAvatarMini}>D</div>
+                  <div style={s.createAvatarMini}>
+                    {user?.avatar_url ? (
+                      <img
+                        src={user.avatar_url}
+                        alt=""
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          borderRadius: "50%",
+                          objectFit: "cover"
+                        }}
+                      />
+                    ) : (
+                      (
+                        (user?.first_name?.[0] || "") +
+                        (user?.last_name?.[0] || "")
+                      ).toUpperCase() ||
+                      user?.username?.[0]?.toUpperCase() ||
+                      "U"
+                    )}
+                  </div>
                   <div>
-                    <div style={{ fontSize:13, fontWeight:600, color:C.text }}>Dhruv</div>
+                    <div style={{ fontSize:13, fontWeight:600, color:C.text }}>
+                      {user?.first_name
+                        ? `${user.first_name} ${user.last_name ?? ""}`.trim()
+                        : user?.username}
+                    </div>
                     <div style={{ fontSize:11, color:C.textMuted }}>Public</div>
                   </div>
                 </div>
